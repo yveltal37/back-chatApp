@@ -10,7 +10,7 @@ export class AuthenticationService {
     constructor(
         @InjectRepository(UserEntity)
         private readonly userRepo: Repository<UserEntity>
-    ) { }
+    ) {}
 
     async signup(createUserDto: CreateUserDto) {
         const existingUser = await this.userRepo.findOne({ where: { username: createUserDto.username } });
@@ -20,7 +20,6 @@ export class AuthenticationService {
         const hashPassword = await bcrypt.hash(createUserDto.password, 10);
 
         createUserDto.password= hashPassword;
-
         const user = this.userRepo.create(createUserDto);
         return this.userRepo.save(user);
     }
@@ -30,12 +29,11 @@ export class AuthenticationService {
         if (!user) {
             throw new Error('User not found');
         }
-        const comparePassword = await bcrypt.compare(loginDto.password, user.password);
 
+        const comparePassword = await bcrypt.compare(loginDto.password, user.password);
         if (!comparePassword) {
             throw new Error('Invalid password');
         }
-
 
         return { message: 'Login successful', userId: user.id };
     }
