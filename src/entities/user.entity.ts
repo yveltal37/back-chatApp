@@ -16,6 +16,9 @@ export class UserEntity {
   @Column()
   password: string;
 
+  @CreateDateColumn()
+  createdAt: Date;
+
   @OneToMany(() => MessageEntity, message => message.sender)
   messages: MessageEntity[];
 
