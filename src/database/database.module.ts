@@ -17,7 +17,6 @@ import { ChatUserEntity } from '../entities/chat-user.entity';
         ChatUserEntity
       ],
       synchronize: true,
-
     }),
   ],
   exports: [TypeOrmModule],

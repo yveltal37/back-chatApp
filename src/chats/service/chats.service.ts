@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatEntity } from '../../entities/chat.entity';
@@ -16,29 +16,51 @@ export class ChatsService {
         private readonly userRepo: Repository<UserEntity>,
     ) {}
 
-    async createChat(name: string, userIds: number[], isGroup: boolean = false) {
-        const chat = this.chatRepo.create({ name, isGroup });
+    async createChat(name: string, userId: number, isGroup: boolean = false) {
+        const chat = this.chatRepo.create({ name, isGroup }); 
         const savedChat = await this.chatRepo.save(chat);
+        const user = await this.userRepo.findOneBy({ id: userId });
+        if (!user) { 
+            throw new BadRequestException('Creator user not found'); 
+        }
 
-        const chatUsers = userIds.map(userId => {
-            const chatUser = new ChatUserEntity();
-            chatUser.chat = savedChat;
-            chatUser.user = { id: userId } as UserEntity;
-            return chatUser;
-        });
-
-        await this.chatUserRepo.save(chatUsers);
-
+        const chatUser = new ChatUserEntity();
+        chatUser.chat = savedChat;
+        chatUser.user=  user ;
+            
+        await this.chatUserRepo.save(chatUser);
         return savedChat;
     }
 
     async getChatsForUser(userId: number) {
-    return this.chatRepo.createQueryBuilder('chat')
-      .leftJoinAndSelect('chat.chatUsers', 'chatUser')
-      .leftJoinAndSelect('chatUser.user', 'user')
-      .leftJoinAndSelect('chat.messages', 'message')
-      .where('user.id = :userId', { userId })
-      .getMany();
-  }
+        const chatConnections = await this.chatUserRepo.find({where: { user: { id: userId } },
+            relations: ['chat'],});
+        return chatConnections.map(connection => connection.chat);
+    }
 
+    async addUser(chatId: number, username: string) {
+        const chat = await this.chatRepo.findOneBy({ id: chatId });
+        if (!chat) {
+            throw new BadRequestException('Chat not found');
+        }
+        if (!chat.isGroup) {
+            throw new BadRequestException('Cannot add users to a private chat'); 
+        }
+
+        const user = await this.userRepo.findOne({ where: { username: username }});
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        const existingParticipant = await this.chatUserRepo.findOne({
+          where: {chat: { id: chatId }, user: { id: user.id }}});
+        if (existingParticipant) {
+            throw new BadRequestException('User is already a participant in this chat');
+        }
+
+        const chatUser = new ChatUserEntity();
+        chatUser.chat = chat;
+        chatUser.user=  user ;  
+        await this.chatUserRepo.save(chatUser);
+    }
 }
