@@ -6,7 +6,7 @@ import  { MessageDto } from '../mess-dto'
 export class MessageController {
     constructor(private readonly messagesService: MessageService) {}
 
-    @Post(':chatId') 
+/*    @Post(':chatId') 
     async sendMessage(
         @Param('chatId', ParseIntPipe) chatId: number,
         @Body() body: MessageDto,
@@ -16,7 +16,7 @@ export class MessageController {
             body.senderId,
             body.content
         );
-    }
+    }*/
 
     @Get('history/:chatId')
     async getHistory(

@@ -15,6 +15,7 @@ import { UserEntity } from '../entities/user.entity';
         ]),
     ],
   providers: [MessageService],
-  controllers: [MessageController]
+  controllers: [MessageController],
+  exports: [MessageService]
 })
 export class MessageModule {}

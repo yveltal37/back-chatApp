@@ -43,7 +43,7 @@ export class ChatsService {
         if (!chat) {
             throw new BadRequestException('Chat not found');
         }
-        if (!chat.isGroup) {
+        if (!chat.isGroup && chat.participants.length === 2) {
             throw new BadRequestException('Cannot add users to a private chat'); 
         }
 
