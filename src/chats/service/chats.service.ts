@@ -39,7 +39,8 @@ export class ChatsService {
     }
 
     async addUser(chatId: number, username: string) {
-        const chat = await this.chatRepo.findOneBy({ id: chatId });
+        const chat = await this.chatRepo.findOne({ where: { id: chatId },
+             relations: ['participants']});
         if (!chat) {
             throw new BadRequestException('Chat not found');
         }
