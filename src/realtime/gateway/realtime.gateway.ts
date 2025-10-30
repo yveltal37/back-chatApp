@@ -1,6 +1,7 @@
 import { SubscribeMessage, WebSocketGateway, MessageBody, ConnectedSocket, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io'
 import { MessageService } from '../../message/service/message.service'; 
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
     cors: {
@@ -13,10 +14,26 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @WebSocketServer()
     readonly server: Server;
 
-    constructor(private readonly messagesService: MessageService) {}
+    constructor(
+        private readonly messagesService: MessageService,
+        private readonly jwtService: JwtService
+    ) {}
 
     handleConnection(client: Socket) {
-        console.log(`Socket Client connected: ${client.id}`);
+        const token = client.handshake.auth.token;
+        if (!token) {
+            client.disconnect();
+            return;
+        }
+
+        try {
+            const payload = this.jwtService.verify(token);
+            client.data.user = payload;
+            console.log(`Socket Client connected: ${client.id}`);
+        } catch (err) {
+            console.log(`Socket connection rejected for ${client.id}: Invalid token`);
+            client.disconnect();
+        }
     }
 
     handleDisconnect(client: Socket) {
@@ -35,10 +52,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
     
     @SubscribeMessage('sendMessage')
-    async handleSendMessage(@MessageBody() payload: { chatId: number, senderId: number, content: string }) {
+    async handleSendMessage(@MessageBody() payload: { chatId: number, content: string },
+    @ConnectedSocket() client: Socket
+) {
+        const senderId = client.data.user.sub;
         const savedMessage = await this.messagesService.SendMessage(
             payload.chatId,
-            payload.senderId,
+            senderId,
             payload.content
         );
 

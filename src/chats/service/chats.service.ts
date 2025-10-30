@@ -64,4 +64,18 @@ export class ChatsService {
         chatUser.user=  user ;  
         await this.chatUserRepo.save(chatUser);
     }
+
+    async leaveChat(chatId: number, userId: number) {
+        const chatUser = await this.chatUserRepo.findOne({
+            where: { chat: { id: chatId }, user: { id: userId } }
+        });
+
+        if (!chatUser) {
+            throw new BadRequestException('User is not a participant in this chat');
+        }
+
+        await this.chatUserRepo.remove(chatUser);
+
+        return { message: 'User left the chat successfully' };
+    }
 }
